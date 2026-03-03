@@ -2,3 +2,5 @@
 __pycache__/
 .idea/
 data/raw/*.xlsx
+# Excel 临时文件
+~$*.xlsx
