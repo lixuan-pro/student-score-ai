@@ -2,10 +2,13 @@ import pandas as pd
 import os
 
 
-def load_data(file_path: str) -> pd.DataFrame:
+def load_data(file_path=None) -> pd.DataFrame:
     """
     读取原始成绩数据
     """
+    if file_path is None:
+        base_dir=os.path.abspath(os.path.join(os.path.dirname(__file__),"../../"))
+        file_path=os.path.join(base_dir,"data","raw","student-mat.csv")
     print("正在读取数据...")
     df = pd.read_csv(file_path)
     print("数据读取完成！")
