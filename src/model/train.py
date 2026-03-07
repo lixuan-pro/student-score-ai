@@ -1,9 +1,18 @@
 import os
 import pandas as pd
+import matplotlib
+import joblib
+matplotlib.use("TkAgg")
 
+import matplotlib.pyplot as plt
+
+from src.visualization.plot import plot_feature_importance,plot_prediction_vs_true
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
+
+plt.rcParams["font.sans-serif"] = ["SimHei"]
+plt.rcParams["axes.unicode_minus"] = False
 
 def train_linear_regression(df_model):
     #意思是训练一个线性回归的模型
@@ -34,7 +43,9 @@ def train_linear_regression(df_model):
 
 
     #模型解释
+    #取出所有列的名字（特征名称）
     feature_name=x.columns
+    #取出所有特征的系数
     coefficients=model.coef_
     coef_df=pd.DataFrame({
         'feature':feature_name,
@@ -45,16 +56,69 @@ def train_linear_regression(df_model):
     print("特征对G3的影响：")
     print(coef_df.head(10))
 
-    return model
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    model_save_path = os.path.join(BASE_DIR, "model", "student_model.pkl")
+
+    joblib.dump(model, model_save_path)
+
+    print("模型已保存:", model_save_path)
+
+    return model,y_test,y_pred,coef_df
+
+#去除G2后的预测
+def train_without_g2(df_model):
+    print("\n=======模型B:删除G2=======")
+    y=df_model['G3']
+
+    x=df_model.drop(columns=['G3','G2'])
+    x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+    model=LinearRegression()
+    model.fit(x_train,y_train)
+    y_pred=model.predict(x_test)
+    r2=r2_score(y_test,y_pred)
+    print("删除G2后的R2:",r2)
+
+#去除G2和G3后的预测
+def train_without_g1_g2(df_model):
+    print("\n=======模型c:删除G1 G2=======")
+
+    y=df_model['G3']
+    x=df_model.drop(columns=['G3','G2','G1'])
+
+    x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+    model=LinearRegression()
+    model.fit(x_train,y_train)
+    y_pred=model.predict(x_test)
+    r2=r2_score(y_test,y_pred)
+
+    print("删除G1 G2后的R2:",r2)
+
 
 if __name__=='__main__':
     BASE_DIR=os.path.abspath(os.path.join(os.path.dirname(__file__),"../../"))
     model_path=os.path.join(BASE_DIR,"data","processed","student_clean_model.xlsx")
-
+    figures_dir = os.path.join(BASE_DIR, "outputs", "figures")
     df_model=pd.read_excel(model_path)
 
     print("读取model版本的数据完成,shape:",df_model.shape)
-    train_linear_regression(df_model)
+    model, y_test, y_pred,coef_df= train_linear_regression(df_model)
+    #生成预测和真实图保存地址
+    prediction_plot_path=os.path.join(figures_dir, "prediction_vs_true.png")
+    #调用visualization里的plot_prediction_vs_true函数来画预测和真实情况的散点图
+    plot_prediction_vs_true(y_test,y_pred, prediction_plot_path)
+
+    #生成特征重要性图保存地址
+    feature_plot_fath=os.path.join(figures_dir,"feature_importance.png")
+    #调用visualization里的plot_feature_importance函数来画柱状图
+    plot_feature_importance(coef_df,feature_plot_fath)
+
+
+
+    #去除G2
+    train_without_g2(df_model)
+    #去除G3
+    train_without_g1_g2(df_model)
+
 
 
 
