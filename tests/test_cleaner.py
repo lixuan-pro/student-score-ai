@@ -14,14 +14,14 @@ YES_NO_COLUMNS = [
 ]
 
 #分类字段，为类别，后面通常会对这些做one-hot编码，变成很多0/1列
-CATEGORICAL_COLUMNS = [
+CATEGORICAL_COLUMNS=[
     "school",
     "sex",
     "address",
     "famsize",
-    "Pstatus",
-    "Mjob",
-    "Fjob",
+    "pstatus",
+    "mjob",
+    "fjob",
     "reason",
     "guardian"
 ]
@@ -108,18 +108,19 @@ def report_duplicates(df):
     return duplicate_count
 
 #验证类别值是否合法
-def validate_category_values(df: pd.DataFrame):
+def validate_category_values(df):
     print("\n=======类别合法性检查=======")
-    invalid_columns = {}
+    #记录非法值
+    invalid_columns={}
 
-    for col, allowed_values in ALLOWED_CATEGORY_VALUES.items():
-        actual_values = set(df[col].dropna().unique())
-        invalid_values = actual_values - allowed_values
-
-        print(f"{col}唯一值：{sorted(actual_values)}")
-
+    #把提前允许的合法字典中的每一列"列名-允许值集合拿出来遍历"
+    for col,allowed_values in ALLOWED_CATEGORY_VALUES.items():
+        #取出这一列，去除空值，去除列中不重复的值
+        actual_values=set(df[col].dropna().unique())
+        invalid_values=actual_values-allowed_values
+        print(f"{col}唯一值：{sorted(invalid_values)}")
         if invalid_values:
-            invalid_columns[col] = invalid_values
+            invalid_columns[col]=invalid_values
 
     if invalid_columns:
         raise ValueError(f"以下类别列存在非法取值：{invalid_columns}")

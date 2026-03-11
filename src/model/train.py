@@ -93,6 +93,57 @@ def train_without_g1_g2(df_model):
 
     print("删除G1 G2后的R2:",r2)
 
+#训练的简化模型
+def train_simple_model(df_model):
+    print("\n======简化模型：G1 G2 studytime failures absences======")
+    #特征列
+    feature_columns=["G1","G2","studytime","failures","absences"]
+    #目标变量
+    y=df_model["G3"]
+    #特征量x
+    x=df_model[feature_columns]
+
+    #划分训练集和测试集
+    x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+
+    #啥，创建模型
+    model=LinearRegression()
+    model.fit(x_train,y_train)
+    #开始预测
+    y_pred_train=model.predict(x_train)
+    y_pred=model.predict(x_test)
+
+    #计算R2
+    r2=r2_score(y_test,y_pred)
+    r2_train=r2_score(y_train,y_pred_train)
+
+    print("简化模型使用的特征：",feature_columns)
+    print("训练集样本数：",len(x_train))
+    print("测试集样本数：",len(x_test))
+    print("简化模型训练集r2:",r2_train)
+    print("简化模型测试集r2:",r2)
+
+    #模型解释
+    coef_df=pd.DataFrame({
+        "feature":feature_columns,
+        "coefficients":model.coef_
+    })
+    coef_df=coef_df.sort_values(by='coefficients',ascending=False)
+
+    print("简化模型特征系数：")
+    print(coef_df)
+
+    # 保存模型
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    simple_model_save_path = os.path.join(BASE_DIR, "model", "student_model_simple.pkl")
+
+    joblib.dump(model, simple_model_save_path)
+    print("简化模型已经保存：", simple_model_save_path)
+
+    return model,y_test,y_pred,coef_df
+
+
+
 
 if __name__=='__main__':
     BASE_DIR=os.path.abspath(os.path.join(os.path.dirname(__file__),"../../"))
@@ -108,9 +159,9 @@ if __name__=='__main__':
     plot_prediction_vs_true(y_test,y_pred, prediction_plot_path)
 
     #生成特征重要性图保存地址
-    feature_plot_fath=os.path.join(figures_dir,"feature_importance.png")
+    feature_plot_path=os.path.join(figures_dir,"feature_importance.png")
     #调用visualization里的plot_feature_importance函数来画柱状图
-    plot_feature_importance(coef_df,feature_plot_fath)
+    plot_feature_importance(coef_df,feature_plot_path)
 
 
 
@@ -118,6 +169,23 @@ if __name__=='__main__':
     train_without_g2(df_model)
     #去除G3
     train_without_g1_g2(df_model)
+
+    #训练简化模型
+    simple_model,y_test_simple,y_pred_simple,coef_df_simple=train_simple_model(df_model)
+
+    #简化模型的预测值，vs真实值
+    simple_prediction_plot_path=os.path.join(figures_dir,"prediction_vs_true_simple.png")
+    plot_prediction_vs_true(y_test_simple,y_pred_simple,simple_prediction_plot_path)
+
+    #简化模型：特征重要性图
+    simple_feature_plot_path=os.path.join(figures_dir,"feature_importance_simple.png")
+    plot_feature_importance(coef_df_simple,simple_feature_plot_path)
+
+
+
+
+
+
 
 
 
